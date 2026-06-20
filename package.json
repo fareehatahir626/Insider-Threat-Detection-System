@@ -1,0 +1,14 @@
+{
+  "name": "insider-threat-detection-system",
+  "version": "1.0.0",
+  "description": "A menu-driven C++ console application that simulates a cybersecurity environment.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build:cpp": "cl.exe /EHsc /Fe:InsiderThreatDetectionSystem.exe .\\ITDS\\src\\*.cpp /I .\\ITDS\\include"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}

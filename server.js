@@ -12,14 +12,26 @@ app.use(express.static(__dirname));
 // We keep ONE persistent C++ process per "session" (in-memory map by sessionId).
 // The UI sends commands; the server pipes stdin and reads stdout until the next menu prompt.
 
-const BINARY = path.join(__dirname, './InsiderThreatDetectionSystem');
+const BINARY = path.join(__dirname, process.platform === 'win32' ? './InsiderThreatDetectionSystem.exe' : './InsiderThreatDetectionSystem');
 const PROMPT_RE = /Enter your choice:\s*$/;
 
-const sessions = {}; // sessionId -> { proc, buffer, waiters }
+const sessions = {}; // sessionId -> { proc, buffer, waiters, lastActive }
+
+// Kill sessions inactive for >15 minutes to prevent Zombie Process leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, session] of Object.entries(sessions)) {
+    if (now - session.lastActive > 15 * 60 * 1000) {
+      session.proc.kill();
+      delete sessions[id];
+      console.log(`Killed idle session: ${id}`);
+    }
+  }
+}, 60000);
 
 function createSession(sessionId) {
   const proc = spawn(BINARY, [], { stdio: ['pipe', 'pipe', 'pipe'] });
-  const session = { proc, buffer: '', waiters: [] };
+  const session = { proc, buffer: '', waiters: [], lastActive: Date.now() };
   sessions[sessionId] = session;
 
   proc.stdout.on('data', (chunk) => {
@@ -57,10 +69,13 @@ function runCommand(sessionId, lines) {
     let session = sessions[sessionId];
     if (!session || session.proc.exitCode !== null) {
       session = createSession(sessionId);
-      // Wait for the initial welcome + menu prompt
-      session.waiters.push(() => {
-        sendLines(session, lines, resolve, reject);
-      });
+    } else {
+      session.lastActive = Date.now();
+    }
+    
+    // Wait for the initial welcome + menu prompt if newly created
+    if (session.waiters.length === 0 && session.buffer === '') {
+      session.waiters.push(() => sendLines(session, lines, resolve, reject));
     } else {
       sendLines(session, lines, resolve, reject);
     }

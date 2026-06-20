@@ -1,4 +1,9 @@
 build/
 *.o
+*.obj
 InsiderThreatDetectionSystem
 *.exe
+node_modules/
+.env
+data/
+employees.txt

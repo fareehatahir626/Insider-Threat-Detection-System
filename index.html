@@ -390,6 +390,15 @@ async function startSession() {
 }
 
 // ── COLORISE OUTPUT ─────────────────────────────────────────────────────
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function colorize(text) {
   return text
     .replace(/THREAT DETECTED|FLAGGED AS THREAT|THREAT/g, s => `<span class="out-threat">${s}</span>`)
@@ -399,7 +408,7 @@ function colorize(text) {
 
 function showOut(elId, text, show = true) {
   const el = document.getElementById(elId);
-  el.innerHTML = colorize(text);
+  el.innerHTML = colorize(escapeHtml(text));
   el.style.display = show ? 'block' : 'none';
 }
 
