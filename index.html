@@ -328,7 +328,7 @@ Login</textarea>
 
 <script>
 // ── CONFIG ─────────────────────────────────────────────────────────────
-const API = 'http://localhost:3000/api';
+const API = window.location.origin + '/api';
 const SESSION = 'itds-' + Math.random().toString(36).slice(2,8);
 
 // Local state mirrors for dashboard
