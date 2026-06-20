@@ -69,14 +69,12 @@ function runCommand(sessionId, lines) {
     let session = sessions[sessionId];
     if (!session || session.proc.exitCode !== null) {
       session = createSession(sessionId);
+      // Wait for the initial welcome + menu prompt
+      session.waiters.push(() => {
+        sendLines(session, lines, resolve, reject);
+      });
     } else {
       session.lastActive = Date.now();
-    }
-    
-    // Wait for the initial welcome + menu prompt if newly created
-    if (session.waiters.length === 0 && session.buffer === '') {
-      session.waiters.push(() => sendLines(session, lines, resolve, reject));
-    } else {
       sendLines(session, lines, resolve, reject);
     }
   });
