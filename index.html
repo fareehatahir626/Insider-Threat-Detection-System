@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Insider Threat Detection System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#090d12;--surface:#0e1520;--card:#121c2a;--border:#1e2f44;
+  --accent:#00c9a7;--warn:#ff4d6d;--yellow:#f4c430;--muted:#4a6278;
+  --text:#cdd9e5;--dim:#7a94a8;
+  --mono:'Share Tech Mono',monospace;--sans:'Inter',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,201,167,.025) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,201,167,.025) 40px);pointer-events:none;z-index:0;}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;background:rgba(9,13,18,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:52px;}
+.logo{font-family:var(--mono);font-size:.82rem;letter-spacing:.08em;color:var(--accent);display:flex;align-items:center;gap:.55rem;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+.hdr-right{display:flex;align-items:center;gap:1.2rem;font-family:var(--mono);font-size:.7rem;color:var(--dim);}
+.led{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:.3rem;}
+.led-g{background:var(--accent);box-shadow:0 0 5px var(--accent);}
+.led-r{background:var(--warn);box-shadow:0 0 5px var(--warn);}
+.led-y{background:var(--yellow);box-shadow:0 0 5px var(--yellow);}
+#hdr-status{display:flex;align-items:center;}
+#hdr-clock{color:var(--dim);}
+
+/* LAYOUT */
+.shell{display:flex;flex:1;position:relative;z-index:1;}
+
+/* SIDEBAR */
+nav{width:210px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:1.2rem 0;display:flex;flex-direction:column;}
+.nav-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;color:var(--muted);padding:.85rem 1.3rem .25rem;text-transform:uppercase;}
+nav button{background:none;border:none;cursor:pointer;width:100%;text-align:left;padding:.5rem 1.3rem;font-family:var(--sans);font-size:.8rem;color:var(--dim);display:flex;align-items:center;gap:.65rem;border-left:2px solid transparent;transition:all .14s;}
+nav button:hover{color:var(--text);background:rgba(0,201,167,.05);}
+nav button.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,201,167,.07);}
+
+/* MAIN */
+main{flex:1;padding:1.8rem;overflow-y:auto;}
+.panel{display:none;}
+.panel.active{display:block;animation:fi .2s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+
+/* PAGE HEADER */
+.ph{margin-bottom:1.5rem;}
+.ph h1{font-family:var(--mono);font-size:1.25rem;font-weight:600;letter-spacing:.04em;}
+.ph p{margin-top:.25rem;font-size:.8rem;color:var(--dim);}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.85rem;margin-bottom:1.6rem;}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem 1.2rem;position:relative;overflow:hidden;}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--cc,var(--accent));}
+.sc .sl{font-size:.68rem;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;}
+.sc .sv{font-family:var(--mono);font-size:1.85rem;color:var(--cc,var(--accent));line-height:1.2;margin-top:.25rem;}
+.sc .ss{font-size:.7rem;color:var(--dim);margin-top:.15rem;}
+.sw{--cc:var(--warn);} .sg{--cc:var(--yellow);} .sb{--cc:#4d9fff;}
+
+/* FORM CARD */
+.fc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.5rem;max-width:500px;}
+.fc h2{font-size:.9rem;font-weight:600;margin-bottom:1.1rem;}
+.fi{margin-bottom:.9rem;}
+.fi label{display:block;font-size:.72rem;color:var(--dim);margin-bottom:.35rem;letter-spacing:.04em;}
+.fi input,.fi select{width:100%;padding:.5rem .7rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--sans);font-size:.83rem;outline:none;transition:border-color .14s;}
+.fi input:focus,.fi select:focus{border-color:var(--accent);}
+.fi select option{background:var(--surface);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:.45rem;padding:.5rem 1.1rem;border-radius:4px;border:none;cursor:pointer;font-family:var(--sans);font-size:.8rem;font-weight:500;transition:all .14s;}
+.btn-p{background:var(--accent);color:#000;} .btn-p:hover{background:#00e2bb;}
+.btn-d{background:var(--warn);color:#fff;} .btn-d:hover{opacity:.85;}
+.btn-g{background:transparent;border:1px solid var(--border);color:var(--text);} .btn-g:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:.32rem .75rem;font-size:.73rem;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* OUTPUT BOX */
+.out-box{background:#06090d;border:1px solid var(--border);border-radius:6px;padding:.9rem 1rem;font-family:var(--mono);font-size:.76rem;line-height:1.75;max-height:340px;overflow-y:auto;color:var(--dim);white-space:pre-wrap;word-break:break-word;margin-top:1rem;}
+.out-threat{color:var(--warn);}
+.out-ok{color:var(--accent);}
+.out-info{color:#4d9fff;}
+.out-box .spin{display:inline-block;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* TABLE */
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.8rem;}
+thead tr{background:var(--surface);border-bottom:1px solid var(--border);}
+th{text-align:left;padding:.65rem .9rem;color:var(--dim);font-weight:500;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;}
+td{padding:.6rem .9rem;border-bottom:1px solid rgba(30,47,68,.45);}
+tbody tr:hover{background:rgba(0,201,167,.03);}
+
+/* BADGE */
+.badge{display:inline-block;padding:.18rem .5rem;border-radius:3px;font-size:.66rem;font-weight:600;letter-spacing:.04em;font-family:var(--mono);}
+.bg{background:rgba(0,201,167,.15);color:var(--accent);}
+.br{background:rgba(255,77,109,.15);color:var(--warn);}
+.by{background:rgba(244,196,48,.15);color:var(--yellow);}
+.bb{background:rgba(77,159,255,.15);color:#4d9fff;}
+
+/* TOAST */
+#ta{position:fixed;bottom:1.4rem;right:1.4rem;z-index:200;display:flex;flex-direction:column;gap:.45rem;}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:.7rem 1rem;font-size:.8rem;max-width:300px;display:flex;align-items:center;gap:.55rem;animation:si .22s ease;box-shadow:0 4px 18px rgba(0,0,0,.4);}
+@keyframes si{from{opacity:0;transform:translateX(18px);}to{opacity:1;transform:none;}}
+.td{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ts .td{background:var(--accent);} .te .td{background:var(--warn);} .tw2 .td{background:var(--yellow);}
+
+/* SECTION CARD */
+.scard{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.25rem;}
+.scard h3{font-size:.78rem;color:var(--dim);margin-bottom:.9rem;font-weight:500;text-transform:uppercase;letter-spacing:.07em;}
+
+/* DASH GRID */
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:.9rem;}
+@media(max-width:860px){.dg{grid-template-columns:1fr;}}
+
+/* FEED */
+.feed{display:flex;flex-direction:column;gap:.45rem;max-height:260px;overflow-y:auto;}
+.fi2{display:flex;align-items:flex-start;gap:.65rem;padding:.55rem .7rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.fi2-icon{width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;}
+.fi2-body .ft{font-size:.8rem;color:var(--text);}
+.fi2-body .fs{font-size:.7rem;color:var(--dim);margin-top:.05rem;}
+
+/* METER */
+.meter{margin:.8rem 0;}
+.meter-lbl{font-size:.7rem;color:var(--dim);margin-bottom:.35rem;display:flex;justify-content:space-between;}
+.meter-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.meter-fill{height:100%;border-radius:3px;transition:width .5s ease;}
+
+/* EMPTY */
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--dim);font-size:.82rem;}
+.empty .ei{font-size:1.8rem;margin-bottom:.6rem;}
+
+/* CONNECTION BANNER */
+#conn-banner{background:rgba(244,196,48,.1);border:1px solid rgba(244,196,48,.3);border-radius:6px;padding:.75rem 1rem;font-size:.8rem;color:var(--yellow);margin-bottom:1.2rem;display:none;}
+
+::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>ITDS — Insider Threat Detection System</div>
+  <div class="hdr-right">
+    <span id="hdr-status"><span class="led led-y"></span>Connecting…</span>
+    <span id="hdr-emp">0 Employees</span>
+    <span id="hdr-threats">0 Threats</span>
+    <span id="hdr-clock"></span>
+  </div>
+</header>
+
+<div class="shell">
+<nav>
+  <span class="nav-label">Monitor</span>
+  <button class="active" onclick="nav('dashboard',this)">⬡ Dashboard</button>
+  <button onclick="nav('activity',this)">⚡ Log Activity</button>
+  <button onclick="nav('logs',this)">📋 View Logs</button>
+  <button onclick="nav('all',this)">📊 All Employees</button>
+  <button onclick="nav('threats',this)">🛡 Threat Summary</button>
+  <span class="nav-label">Employees</span>
+  <button onclick="nav('add',this)">＋ Add Employee</button>
+  <button onclick="nav('rtti',this)">🔍 Identify Type</button>
+  <button onclick="nav('sort',this)">↕ Sort by ID</button>
+  <button onclick="nav('compare',this)">⇄ Compare Roles</button>
+  <span class="nav-label">Admin</span>
+  <button onclick="nav('senior',this)">📁 Senior Audit Export</button>
+  <button onclick="nav('terminal',this)">⌨ Raw Terminal</button>
+</nav>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="ph"><h1>// THREAT MONITOR</h1><p>Live overview powered by your compiled C++ binary.</p></div>
+    <div id="conn-banner">⚠ Cannot reach backend server. Start the Node.js server first: <code>node server.js</code></div>
+    <div class="stats">
+      <div class="sc"><div class="sl">Total Employees</div><div class="sv" id="d-total">—</div><div class="ss">Across all roles</div></div>
+      <div class="sc sw"><div class="sl">Threats Detected</div><div class="sv" id="d-threats">—</div><div class="ss">Flagged activities</div></div>
+      <div class="sc sg"><div class="sl">Flagged Employees</div><div class="sv" id="d-flagged">—</div><div class="ss">With ≥1 threat</div></div>
+      <div class="sc sb"><div class="sl">Activities Logged</div><div class="sv" id="d-acts">—</div><div class="ss">Total actions</div></div>
+    </div>
+    <div class="dg">
+      <div class="scard"><h3>Live Activity Feed</h3><div class="feed" id="dash-feed"><div class="empty"><div class="ei">📡</div>No activity yet.</div></div></div>
+      <div class="scard">
+        <h3>Role Distribution</h3>
+        <div id="role-dist"></div>
+        <div class="meter" style="margin-top:1.1rem;">
+          <div class="meter-lbl"><span>Threat Risk Index</span><span id="risk-pct">0%</span></div>
+          <div class="meter-bar"><div class="meter-fill" id="risk-bar" style="width:0%;background:var(--warn);"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD EMPLOYEE -->
+  <div class="panel" id="panel-add">
+    <div class="ph"><h1>// ADD EMPLOYEE</h1><p>Registers a new employee into the C++ SecurityManager.</p></div>
+    <div class="fc">
+      <h2>New Employee Registration</h2>
+      <div class="fi"><label>EMPLOYEE ID</label><input type="number" id="a-id" placeholder="e.g. 101"/></div>
+      <div class="fi"><label>FULL NAME</label><input type="text" id="a-name" placeholder="e.g. Sara Khan"/></div>
+      <div class="fi"><label>ROLE</label>
+        <select id="a-role">
+          <option value="1">Admin</option>
+          <option value="2" selected>Staff</option>
+          <option value="3">Senior Admin</option>
+        </select>
+      </div>
+      <button class="btn btn-p" onclick="addEmployee()">＋ Add Employee</button>
+      <div id="add-out" class="out-box" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- LOG ACTIVITY -->
+  <div class="panel" id="panel-activity">
+    <div class="ph"><h1>// LOG ACTIVITY</h1><p>Calls <code>checkThreat()</code> on the real C++ Employee object via runtime polymorphism.</p></div>
+    <div class="fc">
+      <h2>Perform Activity (Menu Option 4)</h2>
+      <div class="fi"><label>EMPLOYEE ID</label><input type="number" id="act-id" placeholder="e.g. 101"/></div>
+      <div class="fi"><label>ACTION PERFORMED</label><input type="text" id="act-action" placeholder="e.g. Access Admin Files"/></div>
+      <button class="btn btn-p" onclick="doActivity()">▶ Check &amp; Log</button>
+      <div id="act-out" class="out-box" style="display:none;"></div>
+    </div>
+    <div style="margin-top:1.2rem;max-width:580px;" class="scard">
+      <h3>Staff Restricted Actions (exact match in C++ code)</h3>
+      <div style="font-family:var(--mono);font-size:.75rem;color:var(--warn);line-height:2;">
+        • Access Admin Files<br>• Delete System Logs<br>• Modify User Roles
+      </div>
+      <div style="margin-top:.8rem;font-size:.72rem;color:var(--dim);">Admin &amp; Senior Admin: all actions permitted (no restrictions).</div>
+    </div>
+  </div>
+
+  <!-- VIEW LOGS -->
+  <div class="panel" id="panel-logs">
+    <div class="ph"><h1>// VIEW EMPLOYEE LOGS</h1><p>Calls <code>emp->viewLogs()</code> on the C++ Employee object.</p></div>
+    <div class="fc">
+      <h2>View Activity Log (Menu Option 5)</h2>
+      <div class="fi"><label>EMPLOYEE ID</label><input type="number" id="log-id" placeholder="Enter ID"/></div>
+      <button class="btn btn-p" onclick="viewLogs()">📋 View Logs</button>
+      <div id="log-out" class="out-box" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ALL EMPLOYEES -->
+  <div class="panel" id="panel-all">
+    <div class="ph"><h1>// ALL EMPLOYEES</h1><p>Calls <code>printAll()</code> function template on the C++ Repository.</p></div>
+    <button class="btn btn-p" style="margin-bottom:1rem;" onclick="showAll()">🔄 Refresh List</button>
+    <div id="all-out" class="out-box" style="display:none;"></div>
+  </div>
+
+  <!-- THREATS -->
+  <div class="panel" id="panel-threats">
+    <div class="ph"><h1>// THREAT SUMMARY</h1><p>Calls <code>showThreatSummary()</code> — reads from ThreatCounter and STL count_if.</p></div>
+    <button class="btn btn-p" style="margin-bottom:1rem;" onclick="showThreats()">🛡 Get Summary</button>
+    <div id="threat-out" class="out-box" style="display:none;"></div>
+  </div>
+
+  <!-- RTTI -->
+  <div class="panel" id="panel-rtti">
+    <div class="ph"><h1>// IDENTIFY EMPLOYEE TYPE</h1><p>Calls <code>identifyType()</code> — uses real C++ typeid and dynamic_cast.</p></div>
+    <div class="fc">
+      <h2>RTTI Demo (Menu Option 7)</h2>
+      <div class="fi"><label>EMPLOYEE ID</label><input type="number" id="rtti-id" placeholder="Enter ID"/></div>
+      <button class="btn btn-p" onclick="doRTTI()">🔍 Identify</button>
+      <div id="rtti-out" class="out-box" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- SORT -->
+  <div class="panel" id="panel-sort">
+    <div class="ph"><h1>// SORT BY ID</h1><p>Calls <code>sortEmployeesById()</code> — uses STL <code>std::sort</code> with overloaded <code>operator&lt;</code>.</p></div>
+    <button class="btn btn-p" style="margin-bottom:1rem;" onclick="doSort()">↕ Sort Now</button>
+    <div id="sort-out" class="out-box" style="display:none;"></div>
+  </div>
+
+  <!-- COMPARE -->
+  <div class="panel" id="panel-compare">
+    <div class="ph"><h1>// COMPARE ROLES</h1><p>Calls <code>isSameRole&lt;T1,T2&gt;()</code> function template with multiple type args.</p></div>
+    <div class="fc">
+      <h2>Role Comparison (Menu Option 11)</h2>
+      <div class="fi"><label>EMPLOYEE ID #1</label><input type="number" id="c-id1" placeholder="Enter ID"/></div>
+      <div class="fi"><label>EMPLOYEE ID #2</label><input type="number" id="c-id2" placeholder="Enter ID"/></div>
+      <button class="btn btn-p" onclick="doCompare()">⇄ Compare</button>
+      <div id="cmp-out" class="out-box" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- SENIOR AUDIT -->
+  <div class="panel" id="panel-senior">
+    <div class="ph"><h1>// SENIOR ADMIN AUDIT EXPORT</h1><p>Calls <code>sa->exportAudit()</code> via dynamic_cast — Multiple Inheritance demo.</p></div>
+    <div class="fc">
+      <h2>Export Audit (Menu Option 10)</h2>
+      <div class="fi"><label>SENIOR ADMIN ID</label><input type="number" id="sa-id" placeholder="Enter ID"/></div>
+      <button class="btn btn-p" onclick="doSeniorAudit()">📁 Export</button>
+      <div id="sa-out" class="out-box" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- RAW TERMINAL -->
+  <div class="panel" id="panel-terminal">
+    <div class="ph"><h1>// RAW TERMINAL</h1><p>Send raw stdin lines directly to the C++ process. Separate multiple lines with ↵.</p></div>
+    <div class="fc" style="max-width:620px;">
+      <h2>Direct C++ Process I/O</h2>
+      <div class="fi">
+        <label>STDIN LINES (one per line)</label>
+        <textarea id="raw-input" rows="5" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.8rem;padding:.6rem .8rem;resize:vertical;outline:none;">4
+101
+Login</textarea>
+      </div>
+      <button class="btn btn-p" onclick="doRaw()">⌨ Send</button>
+      <div id="raw-out" class="out-box" style="display:none;"></div>
+    </div>
+    <div style="margin-top:1rem;max-width:620px;" class="scard">
+      <h3>Quick Reference — Menu Numbers</h3>
+      <div style="font-family:var(--mono);font-size:.74rem;line-height:2;color:var(--dim);">
+        1 → Add Admin &nbsp; 2 → Add Staff &nbsp; 3 → Add Senior Admin<br>
+        4 → Perform Activity &nbsp; 5 → View Logs &nbsp; 6 → All Employees<br>
+        7 → Identify Type &nbsp; 8 → Sort &nbsp; 9 → Threat Summary<br>
+        10 → Senior Audit &nbsp; 11 → Compare Roles &nbsp; 12 → Exit
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<div id="ta"></div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────
+const API = 'http://localhost:3000/api';
+const SESSION = 'itds-' + Math.random().toString(36).slice(2,8);
+
+// Local state mirrors for dashboard
+let state = { employees: [], totalThreats: 0, totalActs: 0, flagged: 0, feed: [] };
+let connected = false;
+
+// ── NAVIGATION ──────────────────────────────────────────────────────────
+function nav(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ── API CALL ────────────────────────────────────────────────────────────
+async function cmd(lines) {
+  try {
+    const r = await fetch(`${API}/command`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId: SESSION, lines })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    return d.output || '';
+  } catch (e) {
+    document.getElementById('conn-banner').style.display = 'block';
+    connected = false;
+    setStatus(false);
+    throw e;
+  }
+}
+
+function setStatus(ok) {
+  document.getElementById('hdr-status').innerHTML =
+    ok ? '<span class="led led-g"></span>C++ Binary Live'
+       : '<span class="led led-r"></span>Server Offline';
+}
+
+// ── START SESSION ───────────────────────────────────────────────────────
+async function startSession() {
+  try {
+    const r = await fetch(`${API}/start`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionId: SESSION })
+    });
+    if (!r.ok) throw new Error();
+    connected = true;
+    setStatus(true);
+    document.getElementById('conn-banner').style.display = 'none';
+    toast('C++ binary started successfully.', 's');
+    updateDash();
+  } catch {
+    setStatus(false);
+    document.getElementById('conn-banner').style.display = 'block';
+    toast('Cannot reach backend server. Start: node server.js', 'e');
+  }
+}
+
+// ── COLORISE OUTPUT ─────────────────────────────────────────────────────
+function colorize(text) {
+  return text
+    .replace(/THREAT DETECTED|FLAGGED AS THREAT|THREAT/g, s => `<span class="out-threat">${s}</span>`)
+    .replace(/Allowed|Normal Activity|sorted|added successfully|found/gi, s => `<span class="out-ok">${s}</span>`)
+    .replace(/Employee not found|No Senior Admin|Invalid|not found/gi, s => `<span style="color:var(--warn);">${s}</span>`);
+}
+
+function showOut(elId, text, show = true) {
+  const el = document.getElementById(elId);
+  el.innerHTML = colorize(text);
+  el.style.display = show ? 'block' : 'none';
+}
+
+function loadingOut(elId) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '<span class="spin">⟳</span> Running C++ binary…';
+  el.style.display = 'block';
+}
+
+// ── ADD EMPLOYEE ─────────────────────────────────────────────────────────
+async function addEmployee() {
+  const id   = document.getElementById('a-id').value.trim();
+  const name = document.getElementById('a-name').value.trim();
+  const role = document.getElementById('a-role').value;
+  if (!id || !name) { toast('Fill in all fields.', 'w'); return; }
+
+  const roleNames = {'1':'Admin','2':'Staff','3':'Senior Admin'};
+  loadingOut('add-out');
+  try {
+    const out = await cmd([role, id, name]);
+    showOut('add-out', out);
+    // Track locally for dashboard
+    state.employees.push({ id: parseInt(id), name, role: roleNames[role] });
+    updateDash();
+    feedItem('➕', `${name} added as ${roleNames[role]}`, `ID: ${id}`, '#4d9fff');
+    toast(`${roleNames[role]} "${name}" added.`, 's');
+    document.getElementById('a-id').value = '';
+    document.getElementById('a-name').value = '';
+  } catch(e) { showOut('add-out', 'Error: ' + e.message); }
+}
+
+// ── LOG ACTIVITY ─────────────────────────────────────────────────────────
+async function doActivity() {
+  const id     = document.getElementById('act-id').value.trim();
+  const action = document.getElementById('act-action').value.trim();
+  if (!id || !action) { toast('Fill in all fields.', 'w'); return; }
+
+  loadingOut('act-out');
+  try {
+    const out = await cmd(['4', id, action]);
+    showOut('act-out', out);
+    state.totalActs++;
+    const isThreat = out.includes('THREAT');
+    if (isThreat) {
+      state.totalThreats++;
+      feedItem('🚨', 'Threat flagged', action, '#ff4d6d');
+      toast('THREAT DETECTED: ' + action, 'e');
+    } else {
+      feedItem('✅', 'Activity logged', action, '#00c9a7');
+      toast('Activity logged.', 's');
+    }
+    updateDash();
+    document.getElementById('act-action').value = '';
+  } catch(e) { showOut('act-out', 'Error: ' + e.message); }
+}
+
+// ── VIEW LOGS ─────────────────────────────────────────────────────────────
+async function viewLogs() {
+  const id = document.getElementById('log-id').value.trim();
+  if (!id) { toast('Enter an employee ID.', 'w'); return; }
+  loadingOut('log-out');
+  try {
+    const out = await cmd(['5', id]);
+    showOut('log-out', out);
+  } catch(e) { showOut('log-out', 'Error: ' + e.message); }
+}
+
+// ── ALL EMPLOYEES ──────────────────────────────────────────────────────────
+async function showAll() {
+  loadingOut('all-out');
+  try {
+    const out = await cmd(['6']);
+    showOut('all-out', out);
+  } catch(e) { showOut('all-out', 'Error: ' + e.message); }
+}
+
+// ── THREAT SUMMARY ─────────────────────────────────────────────────────────
+async function showThreats() {
+  loadingOut('threat-out');
+  try {
+    const out = await cmd(['9']);
+    showOut('threat-out', out);
+    // Parse threats from output
+    const m = out.match(/Total Threats Detected:\s*(\d+)/);
+    const f = out.match(/at least one flagged activity:\s*(\d+)/);
+    if (m) { state.totalThreats = parseInt(m[1]); }
+    if (f) { state.flagged = parseInt(f[1]); }
+    updateDash();
+  } catch(e) { showOut('threat-out', 'Error: ' + e.message); }
+}
+
+// ── RTTI ───────────────────────────────────────────────────────────────────
+async function doRTTI() {
+  const id = document.getElementById('rtti-id').value.trim();
+  if (!id) { toast('Enter an employee ID.', 'w'); return; }
+  loadingOut('rtti-out');
+  try {
+    const out = await cmd(['7', id]);
+    showOut('rtti-out', out);
+  } catch(e) { showOut('rtti-out', 'Error: ' + e.message); }
+}
+
+// ── SORT ────────────────────────────────────────────────────────────────────
+async function doSort() {
+  loadingOut('sort-out');
+  try {
+    const out = await cmd(['8']);
+    showOut('sort-out', out + '\n\n[Use "All Employees" to see sorted order.]');
+    toast('Sorted by ID via std::sort.', 's');
+  } catch(e) { showOut('sort-out', 'Error: ' + e.message); }
+}
+
+// ── COMPARE ─────────────────────────────────────────────────────────────────
+async function doCompare() {
+  const id1 = document.getElementById('c-id1').value.trim();
+  const id2 = document.getElementById('c-id2').value.trim();
+  if (!id1 || !id2) { toast('Enter both IDs.', 'w'); return; }
+  loadingOut('cmp-out');
+  try {
+    const out = await cmd(['11', id1, id2]);
+    showOut('cmp-out', out);
+  } catch(e) { showOut('cmp-out', 'Error: ' + e.message); }
+}
+
+// ── SENIOR AUDIT ─────────────────────────────────────────────────────────────
+async function doSeniorAudit() {
+  const id = document.getElementById('sa-id').value.trim();
+  if (!id) { toast('Enter a Senior Admin ID.', 'w'); return; }
+  loadingOut('sa-out');
+  try {
+    const out = await cmd(['10', id]);
+    showOut('sa-out', out);
+  } catch(e) { showOut('sa-out', 'Error: ' + e.message); }
+}
+
+// ── RAW TERMINAL ──────────────────────────────────────────────────────────────
+async function doRaw() {
+  const lines = document.getElementById('raw-input').value.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) { toast('Enter at least one line.', 'w'); return; }
+  loadingOut('raw-out');
+  try {
+    const out = await cmd(lines);
+    showOut('raw-out', out);
+  } catch(e) { showOut('raw-out', 'Error: ' + e.message); }
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function updateDash() {
+  const total   = state.employees.length;
+  const threats = state.totalThreats;
+  const flagged = state.flagged;
+  const acts    = state.totalActs;
+
+  document.getElementById('d-total').textContent   = total;
+  document.getElementById('d-threats').textContent = threats;
+  document.getElementById('d-flagged').textContent = flagged;
+  document.getElementById('d-acts').textContent    = acts;
+  document.getElementById('hdr-emp').textContent   = total + ' Employees';
+  document.getElementById('hdr-threats').textContent = threats + ' Threats';
+
+  const risk = acts === 0 ? 0 : Math.round(threats / acts * 100);
+  document.getElementById('risk-pct').textContent = risk + '%';
+  document.getElementById('risk-bar').style.width = risk + '%';
+
+  // Role dist
+  const roles = { Admin: 0, Staff: 0, 'Senior Admin': 0 };
+  const colors = { Admin: '#4d9fff', Staff: '#00c9a7', 'Senior Admin': '#f4c430' };
+  state.employees.forEach(e => { if (roles[e.role] !== undefined) roles[e.role]++; });
+  document.getElementById('role-dist').innerHTML = Object.entries(roles).map(([r, c]) => `
+    <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.55rem;">
+      <span style="font-family:var(--mono);font-size:.7rem;color:${colors[r]};min-width:90px;">${r}</span>
+      <div style="flex:1;background:var(--border);border-radius:2px;height:4px;">
+        <div style="width:${total ? Math.round(c/total*100) : 0}%;background:${colors[r]};height:100%;border-radius:2px;transition:width .4s;"></div>
+      </div>
+      <span style="font-family:var(--mono);font-size:.72rem;color:var(--dim);min-width:16px;text-align:right;">${c}</span>
+    </div>`).join('');
+}
+
+function feedItem(icon, title, sub, color) {
+  const feed = document.getElementById('dash-feed');
+  const empty = feed.querySelector('.empty');
+  if (empty) empty.remove();
+  const el = document.createElement('div');
+  el.className = 'fi2';
+  el.innerHTML = `<div class="fi2-icon" style="background:${color}22;color:${color};">${icon}</div><div class="fi2-body"><div class="ft">${title}</div><div class="fs">${sub}</div></div>`;
+  feed.prepend(el);
+  while (feed.children.length > 8) feed.removeChild(feed.lastChild);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, type = 's') {
+  const map = { s: 'ts', e: 'te', w: 'tw2' };
+  const t = document.createElement('div');
+  t.className = `toast ${map[type] || 'ts'}`;
+  t.innerHTML = `<div class="td"></div><span>${msg}</span>`;
+  document.getElementById('ta').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── CLOCK ─────────────────────────────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('hdr-clock').textContent = new Date().toLocaleTimeString('en-GB');
+}, 1000);
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+startSession();
+updateDash();
+</script>
+</body>
+</html>
