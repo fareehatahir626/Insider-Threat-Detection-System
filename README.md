@@ -13,6 +13,20 @@ insider-threat behaviour, based on role (`Admin`, `Staff`, `SeniorAdmin`).
 This project uses **only** concepts covered in Lessons 6, 7A, 7B, 8, and
 9 of the course.
 
+## Architecture 
+
+This system uses a robust **3-tier architecture**:
+1. **Frontend**: The `index.html` file provides a dynamic web UI running in your browser.
+2. **Backend Bridge**: A Node.js Express server (`server.js`) handles HTTP requests.
+3. **Core Engine**: The compiled C++ binary (`InsiderThreatDetectionSystem.exe`) which holds the state, handles File I/O persistence, and executes the actual OOP threat-checking logic.
+
+## API Documentation (Node.js Bridge)
+
+The Node.js server exposes a single API endpoint to communicate with the C++ core engine:
+* **`POST /api/command`**
+  * **Payload:** `{ "sessionId": "string", "lines": ["string"] }`
+  * **Behavior:** Streams the input lines directly into the `stdin` of the C++ process, waits for the `stdout` buffer to output the menu prompt regex, and returns the gathered `stdout` string to the frontend.
+
 ## Project Structure
 
 ```
@@ -104,12 +118,20 @@ Enter your choice: 9
 
 Total Threats Detected: 1
 Employees with at least one flagged activity: 1
-
 Enter your choice: 12
 Exiting system...
   (Staff destroyed: Sara)
   (Employee base destroyed for: Sara)
 ```
+
+## Demo Guidelines (How to Test)
+
+If you are demoing or reviewing this project, follow this happy-path sequence to see all OOP features in action:
+1. **Start the Node Server:** Run `node server.js` and open `http://localhost:3000` in your browser.
+2. **Add Employees:** Use the left panel to add a Staff member (e.g. ID: 101, Role: 2) and an Admin.
+3. **Simulate a Threat:** In the center panel, trigger an activity on the Staff member ID. Type `Access Admin Files` or `Delete System Logs`. You will see it flagged in red as a threat!
+4. **Sort and Analyze:** Click the `Sort by ID` and `View Threat Summary` quick-action buttons to see STL algorithms (sorting and counting) in action.
+5. **Persistence Check:** Stop the Node.js server, restart it, and View All Employees. You will see your added employees are seamlessly loaded from `employees.txt` via C++ File I/O!
 
 ## Concept-to-File Map (for viva / explanation)
 
