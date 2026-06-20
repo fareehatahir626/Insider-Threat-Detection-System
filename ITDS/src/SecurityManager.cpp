@@ -7,14 +7,53 @@
 #include <algorithm>
 #include <typeinfo>
 
-SecurityManager::SecurityManager() {}
+#include <fstream>
+#include <sstream>
+#include <string>
+
+SecurityManager::SecurityManager() {
+    loadData("employees.txt");
+}
 
 SecurityManager::~SecurityManager() {
+    saveData("employees.txt");
     // Cleanup using an explicit STL iterator (Lesson 9: Iterators)
     std::vector<Employee*>& all = employees.getAll();
     for (std::vector<Employee*>::iterator it = all.begin(); it != all.end(); ++it) {
         delete (*it);
     }
+}
+
+void SecurityManager::saveData(const std::string& filename) const {
+    std::ofstream outFile(filename);
+    if (!outFile) return;
+    const std::vector<Employee*>& all = employees.getAll();
+    for (size_t i = 0; i < all.size(); ++i) {
+        outFile << all[i]->getRole() << "," << all[i]->getId() << "," << all[i]->getName() << "\n";
+    }
+    outFile.close();
+}
+
+void SecurityManager::loadData(const std::string& filename) {
+    std::ifstream inFile(filename);
+    if (!inFile) return;
+    std::string line;
+    while (std::getline(inFile, line)) {
+        std::stringstream ss(line);
+        std::string roleStr, idStr, name;
+        if (std::getline(ss, roleStr, ',') && std::getline(ss, idStr, ',') && std::getline(ss, name)) {
+            try {
+                int id = std::stoi(idStr);
+                if (findEmployee(id) != nullptr) continue; // Skip duplicates
+                if (roleStr == "Admin") addEmployee(new Admin(id, name));
+                else if (roleStr == "Staff") addEmployee(new Staff(id, name));
+                else if (roleStr == "SeniorAdmin") addEmployee(new SeniorAdmin(id, name));
+            } catch (...) {
+                // Ignore parse errors
+            }
+        }
+    }
+    inFile.close();
 }
 
 void SecurityManager::addEmployee(Employee* emp) {

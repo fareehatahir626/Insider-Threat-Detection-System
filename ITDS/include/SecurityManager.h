@@ -22,6 +22,9 @@ public:
     SecurityManager();
     ~SecurityManager();
 
+    void saveData(const std::string& filename) const;
+    void loadData(const std::string& filename);
+
     void addEmployee(Employee* emp);
     Employee* findEmployee(int id);
 

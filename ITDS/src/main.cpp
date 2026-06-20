@@ -46,11 +46,18 @@ int main() {
     do {
         showMenu();
         cin >> choice;
+        
+        if (!cin) {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            choice = 0; // Trigger default case
+        }
 
         switch (choice) {
         case 1: {
             int id; string name;
             cout << "Enter Admin ID: "; cin >> id;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             cout << "Enter Admin Name: "; cin.ignore(); getline(cin, name);
             manager.addEmployee(new Admin(id, name));
             cout << "Admin added successfully.\n";
@@ -59,6 +66,7 @@ int main() {
         case 2: {
             int id; string name;
             cout << "Enter Staff ID: "; cin >> id;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             cout << "Enter Staff Name: "; cin.ignore(); getline(cin, name);
             manager.addEmployee(new Staff(id, name));
             cout << "Staff added successfully.\n";
@@ -67,6 +75,7 @@ int main() {
         case 3: {
             int id; string name;
             cout << "Enter Senior Admin ID: "; cin >> id;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             cout << "Enter Senior Admin Name: "; cin.ignore(); getline(cin, name);
             manager.addEmployee(new SeniorAdmin(id, name));
             cout << "Senior Admin added successfully.\n";
@@ -75,6 +84,7 @@ int main() {
         case 4: {
             int id; string action;
             cout << "Enter Employee ID: "; cin >> id;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             cout << "Enter action performed (e.g. Login, Access Admin Files): ";
             cin.ignore(); getline(cin, action);
             manager.performActivity(id, action);   // Runtime Polymorphism
@@ -83,6 +93,7 @@ int main() {
         case 5: {
             int id;
             cout << "Enter Employee ID: "; cin >> id;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             Employee* emp = manager.findEmployee(id);
             if (emp == nullptr) cout << "Employee not found.\n";
             else emp->viewLogs();
@@ -94,6 +105,7 @@ int main() {
         case 7: {
             int id;
             cout << "Enter Employee ID: "; cin >> id;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             manager.identifyType(id);
             break;
         }
@@ -106,6 +118,7 @@ int main() {
         case 10: {
             int id;
             cout << "Enter Senior Admin ID: "; cin >> id;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             Employee* emp = manager.findEmployee(id);
             SeniorAdmin* sa = dynamic_cast<SeniorAdmin*>(emp);
             if (sa == nullptr) cout << "No Senior Admin found with that ID.\n";
@@ -115,7 +128,9 @@ int main() {
         case 11: {
             int id1, id2;
             cout << "Enter first Employee ID: "; cin >> id1;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             cout << "Enter second Employee ID: "; cin >> id2;
+            if (!cin) { cin.clear(); cin.ignore(10000, '\n'); cout << "Invalid ID.\n"; break; }
             Employee* e1 = manager.findEmployee(id1);
             Employee* e2 = manager.findEmployee(id2);
             if (e1 == nullptr || e2 == nullptr) {
